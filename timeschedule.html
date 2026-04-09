@@ -18,7 +18,6 @@
       padding: 1.8rem 1.5rem;
     }
 
-    /* main app container */
     .app-container {
       max-width: 1300px;
       margin: 0 auto;
@@ -30,7 +29,6 @@
       transition: all 0.2s ease;
     }
 
-    /* header */
     .header {
       display: flex;
       justify-content: space-between;
@@ -63,7 +61,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    /* two column layout */
     .schedule-grid {
       display: grid;
       grid-template-columns: 1fr 1.6fr;
@@ -71,7 +68,6 @@
       margin-top: 0.8rem;
     }
 
-    /* ADD TASK FORM */
     .form-card {
       background: rgba(255, 255, 255, 0.8);
       backdrop-filter: blur(8px);
@@ -147,7 +143,6 @@
       background: #4a5a72;
     }
 
-    /* TASK LIST (TIMELINE) */
     .timeline-card {
       background: rgba(255, 255, 255, 0.75);
       backdrop-filter: blur(8px);
@@ -180,7 +175,6 @@
       overflow-y: auto;
       padding-right: 0.3rem;
     }
-    /* custom scroll */
     .tasks-container::-webkit-scrollbar {
       width: 6px;
     }
@@ -193,7 +187,6 @@
       border-radius: 10px;
     }
 
-    /* individual task card */
     .task-item {
       background: white;
       border-radius: 1.5rem;
@@ -206,7 +199,6 @@
       border: 1px solid #e9edf4;
       transition: all 0.2s;
       cursor: grab;
-      transition: background 0.15s, transform 0.1s;
     }
     .task-item:active {
       cursor: grabbing;
@@ -316,23 +308,36 @@
       display: inline-block;
       padding: 0.2rem 0.7rem;
       border-radius: 20px;
-      margin-left: 0.5rem;
+      margin-top: 0.5rem;
+      text-align: center;
     }
   </style>
 </head>
 <body>
 <div class="app-container">
   <div class="header">
-    <h1>📅 Daily Flow · Schedule</h1>
+    <h1>📅 Daily Flow · Schedule Studio</h1>
+    <div class="date-badge" id="currentDate"></div>
   </div>
 
   <div class="schedule-grid">
-    <!-- left panel: add/edit form -->
+    <!-- RIGHT panel: timeline with tasks (shown first visually) -->
+    <div class="timeline-card">
+      <div class="timeline-header">
+        <h2>📋 Today's timeline</h2>
+        <div class="task-stats" id="taskStats">0 tasks</div>
+      </div>
+      <div class="tasks-container" id="tasksContainer">
+        <!-- dynamic tasks injected here -->
+      </div>
+    </div>
+
+    <!-- LEFT panel: add/edit form -->
     <div class="form-card">
       <h2 id="formTitle">✍️ Add new task</h2>
       <div class="input-group">
         <label>📌 Task title</label>
-        <input type="text" id="taskTitle" maxlength="80">
+        <input type="text" id="taskTitle" placeholder="e.g., Morning workout, Focus session ..." maxlength="80">
       </div>
       <div class="time-row">
         <div class="input-group">
@@ -346,32 +351,21 @@
       </div>
       <div class="input-group">
         <label>📝 Notes (optional)</label>
-        <textarea id="taskNote" rows="2" ></textarea>
+        <textarea id="taskNote" rows="2" placeholder="Add location, details, or prep ..."></textarea>
       </div>
       <button id="addBtn">➕ Add to schedule</button>
       <button id="cancelEditBtn" class="reset-btn" style="display: none;">✖️ Cancel editing</button>
       <button id="resetDemoBtn" class="reset-btn">🗑️ Clear all tasks</button>
-      <div class="info-tip" style="margin-top: 12px; text-align:center;">💡 Drag tasks ↕️ to reorder your day</div>
-    </div>
-
-    <!-- right panel: timeline with tasks -->
-    <div class="timeline-card">
-      <div class="timeline-header">
-        <h2>📋 Today's timeline</h2>
-        <div class="task-stats" id="taskStats">0 tasks</div>
-      </div>
-      <div class="tasks-container" id="tasksContainer">
-        <!-- dynamic tasks injected here -->
-      </div>
+      <div class="info-tip">💡 Drag tasks ↕️ to reorder your day</div>
     </div>
   </div>
   <footer>✔️ Auto-save in browser • Mark complete • Edit anytime • Drag & drop reorder</footer>
 </div>
 
 <script>
-  // ---------- DATA MODEL ----------
-  let tasks = [];     // each task: { id, title, startTime, endTime, note, completed }
-  let editModeId = null;  // if not null, we are editing this task
+  // DATA MODEL
+  let tasks = [];
+  let editModeId = null;
 
   // DOM elements
   const titleInput = document.getElementById('taskTitle');
@@ -385,28 +379,44 @@
   const taskStatsSpan = document.getElementById('taskStats');
   const formTitleSpan = document.getElementById('formTitle');
 
-  // Helper: save to localStorage
   function saveToLocal() {
     localStorage.setItem('daily_schedule_app', JSON.stringify(tasks));
   }
 
-  // Helper: load from localStorage
   function loadFromLocal() {
     const stored = localStorage.getItem('daily_schedule_app');
-    if (stored) {
+    if (stored && stored !== '[]') {
       try {
         tasks = JSON.parse(stored);
-        // ensure each task has 'completed' field for older data
         tasks = tasks.map(t => ({ ...t, completed: t.completed === true }));
-      } catch(e) { tasks = []; }
+      } catch(e) { 
+        tasks = getDemoTasks();
+      }
     } else {
-      // default demo tasks if nothing saved
-      tasks = [];
+      tasks = getDemoTasks();
       saveToLocal();
     }
   }
 
-  // render tasks to DOM + drag-and-drop setup
+  function getDemoTasks() {
+    return [
+      { id: Date.now() + 101, title: "Morning deep work", startTime: "09:00", endTime: "11:00", note: "Focus on priority project", completed: false },
+      { id: Date.now() + 102, title: "Lunch break", startTime: "12:30", endTime: "13:30", note: "Rest & recharge", completed: false },
+      { id: Date.now() + 103, title: "Team sync", startTime: "14:00", endTime: "15:00", note: "Zoom call with team", completed: false },
+      { id: Date.now() + 104, title: "Review & plan tomorrow", startTime: "16:30", endTime: "17:30", note: "Write down goals", completed: false },
+    ];
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
   function renderTasks() {
     if (!tasksContainer) return;
     if (tasks.length === 0) {
@@ -417,7 +427,6 @@
     const completedCount = tasks.filter(t => t.completed).length;
     taskStatsSpan.innerText = `${tasks.length} tasks · ${completedCount} done`;
     
-    // create task elements with data-id attribute
     tasksContainer.innerHTML = '';
     tasks.forEach((task, idx) => {
       const taskDiv = document.createElement('div');
@@ -426,7 +435,6 @@
       taskDiv.setAttribute('draggable', 'true');
       taskDiv.setAttribute('data-index', idx);
       
-      // inner structure
       taskDiv.innerHTML = `
         <input type="checkbox" class="task-complete-check" ${task.completed ? 'checked' : ''}>
         <div class="task-content">
@@ -442,29 +450,25 @@
         </div>
       `;
       
-      // checkbox toggle
       const chk = taskDiv.querySelector('.task-complete-check');
       chk.addEventListener('change', (e) => {
         task.completed = e.target.checked;
         saveToLocal();
-        renderTasks();  // re-render to update style & stats
+        renderTasks();
       });
       
-      // edit button
       const editBtn = taskDiv.querySelector('.edit-btn');
       editBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         startEditingTask(task.id);
       });
       
-      // delete button
       const delBtn = taskDiv.querySelector('.delete-btn');
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         deleteTaskById(task.id);
       });
       
-      // drag and drop events
       taskDiv.addEventListener('dragstart', handleDragStart);
       taskDiv.addEventListener('dragover', handleDragOver);
       taskDiv.addEventListener('drop', handleDrop);
@@ -474,20 +478,6 @@
     });
   }
   
-  // Simple escape to avoid XSS
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
-    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
-      return c;
-    });
-  }
-  
-  // drag & drop globals
   let dragSourceId = null;
   
   function handleDragStart(e) {
@@ -515,7 +505,6 @@
     const targetIndex = tasks.findIndex(t => t.id == targetId);
     if (sourceIndex === -1 || targetIndex === -1) return;
     
-    // reorder array
     const [movedTask] = tasks.splice(sourceIndex, 1);
     tasks.splice(targetIndex, 0, movedTask);
     saveToLocal();
@@ -528,7 +517,6 @@
     dragSourceId = null;
   }
   
-  // CRUD operations
   function addOrUpdateTask() {
     const title = titleInput.value.trim();
     if (!title) {
@@ -544,7 +532,6 @@
     const note = noteInput.value.trim();
     
     if (editModeId !== null) {
-      // update existing task
       const index = tasks.findIndex(t => t.id === editModeId);
       if (index !== -1) {
         tasks[index] = {
@@ -553,7 +540,7 @@
           startTime: startTime,
           endTime: endTime,
           note: note,
-          completed: tasks[index].completed // keep previous completion status
+          completed: tasks[index].completed
         };
       }
       editModeId = null;
@@ -561,7 +548,6 @@
       addBtn.innerText = "➕ Add to schedule";
       cancelEditBtn.style.display = 'none';
     } else {
-      // create new
       const newTask = {
         id: Date.now(),
         title: title,
@@ -572,7 +558,6 @@
       };
       tasks.push(newTask);
     }
-    // reset form fields
     titleInput.value = '';
     noteInput.value = '';
     startInput.value = '09:00';
@@ -592,7 +577,6 @@
     formTitleSpan.innerText = "✏️ Edit task";
     addBtn.innerText = "💾 Save changes";
     cancelEditBtn.style.display = 'block';
-    // scroll smoothly to form
     document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   
@@ -625,15 +609,14 @@
     }
   }
   
-  // set today's date in header
   function updateDateBadge() {
     const now = new Date();
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const formatted = now.toLocaleDateString(undefined, options);
-    document.getElementById('currentDate').innerText = formatted;
+    const dateBadge = document.getElementById('currentDate');
+    if (dateBadge) dateBadge.innerText = formatted;
   }
   
-  // event binding and init
   function init() {
     loadFromLocal();
     updateDateBadge();
@@ -643,7 +626,6 @@
     cancelEditBtn.addEventListener('click', cancelEditing);
     resetDemoBtn.addEventListener('click', resetAllTasks);
     
-    // optional: allow pressing enter in title? not needed but fine
     titleInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') addOrUpdateTask();
     });
