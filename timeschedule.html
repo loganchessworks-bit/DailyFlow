@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Daily Flow · Smart Schedule Planner</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', 'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
+      min-height: 100vh;
+      padding: 1.8rem 1.5rem;
+    }
+
+    /* main app container */
+    .app-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(2px);
+      border-radius: 3rem;
+      box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.2);
+      padding: 1.8rem 2rem 2.5rem;
+      transition: all 0.2s ease;
+    }
+
+    /* header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid rgba(72, 94, 144, 0.25);
+      padding-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1f2b48, #2c3e66);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .date-badge {
+      background: #ffffffcc;
+      backdrop-filter: blur(4px);
+      padding: 0.3rem 1rem;
+      border-radius: 60px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #1e2a47;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    /* two column layout */
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 2rem;
+      margin-top: 0.8rem;
+    }
+
+    /* ADD TASK FORM */
+    .form-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(8px);
+      border-radius: 2rem;
+      padding: 1.5rem;
+      box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(255,255,255,0.6);
+      transition: transform 0.1s ease;
+    }
+    .form-card h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      color: #1f2b48;
+    }
+    .input-group {
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    label {
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #2c3e66;
+    }
+    input, textarea {
+      padding: 0.75rem 1rem;
+      border-radius: 1.2rem;
+      border: 1px solid #cad2e0;
+      background: white;
+      font-size: 0.95rem;
+      transition: 0.2s;
+      outline: none;
+    }
+    input:focus, textarea:focus {
+      border-color: #4f7df3;
+      box-shadow: 0 0 0 3px rgba(79, 125, 243, 0.2);
+    }
+    .time-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .time-row .input-group {
+      flex: 1;
+    }
+    button {
+      background: #2c3e66;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.2rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-top: 0.5rem;
+      width: 100%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    button:hover {
+      background: #1f2b48;
+      transform: translateY(-2px);
+    }
+    .reset-btn {
+      background: #6c7a8e;
+      margin-top: 0.6rem;
+    }
+    .reset-btn:hover {
+      background: #4a5a72;
+    }
+
+    /* TASK LIST (TIMELINE) */
+    .timeline-card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px);
+      border-radius: 2rem;
+      padding: 1.5rem;
+      box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(255,255,255,0.6);
+    }
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .timeline-header h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1f2b48;
+    }
+    .task-stats {
+      background: #eef2fa;
+      padding: 0.3rem 0.9rem;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .tasks-container {
+      max-height: 62vh;
+      overflow-y: auto;
+      padding-right: 0.3rem;
+    }
+    /* custom scroll */
+    .tasks-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .tasks-container::-webkit-scrollbar-track {
+      background: #e2e8f0;
+      border-radius: 10px;
+    }
+    .tasks-container::-webkit-scrollbar-thumb {
+      background: #9aaec9;
+      border-radius: 10px;
+    }
+
+    /* individual task card */
+    .task-item {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 1rem 1rem 1rem 1.2rem;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.03);
+      border: 1px solid #e9edf4;
+      transition: all 0.2s;
+      cursor: grab;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .task-item:active {
+      cursor: grabbing;
+    }
+    .task-item.dragging {
+      opacity: 0.4;
+      cursor: grabbing;
+    }
+    .task-complete-check {
+      transform: scale(1.1);
+      accent-color: #2c6e2c;
+      width: 1.2rem;
+      height: 1.2rem;
+      cursor: pointer;
+    }
+    .task-content {
+      flex: 1;
+    }
+    .task-title {
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+    .task-title span:first-child {
+      color: #1e2f41;
+    }
+    .task-time {
+      font-size: 0.7rem;
+      background: #eef2ff;
+      padding: 0.2rem 0.6rem;
+      border-radius: 30px;
+      font-weight: 500;
+      color: #2c5282;
+    }
+    .task-note {
+      font-size: 0.75rem;
+      color: #5a687c;
+      margin-top: 0.3rem;
+      word-break: break-word;
+    }
+    .completed-task .task-title span:first-child {
+      text-decoration: line-through;
+      color: #8a99ae;
+    }
+    .completed-task .task-note {
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+    .task-actions {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .edit-btn, .delete-btn {
+      background: transparent;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.3rem;
+      width: auto;
+      border-radius: 40px;
+      transition: 0.1s;
+      margin: 0;
+      box-shadow: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .edit-btn {
+      color: #3a6ea5;
+    }
+    .edit-btn:hover {
+      background: #e9f0fc;
+      transform: scale(1.05);
+    }
+    .delete-btn {
+      color: #bc6c6c;
+    }
+    .delete-btn:hover {
+      background: #ffe6e6;
+      transform: scale(1.05);
+    }
+    .empty-message {
+      text-align: center;
+      color: #6b7b93;
+      padding: 2rem;
+      font-style: italic;
+    }
+    footer {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.7rem;
+      color: #6a7c9e;
+    }
+    @media (max-width: 780px) {
+      body { padding: 1rem; }
+      .app-container { padding: 1.2rem; }
+      .schedule-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+      .tasks-container { max-height: 50vh; }
+    }
+    .info-tip {
+      font-size: 0.7rem;
+      background: #dfe6f0;
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <h1>📅 Daily Flow · Schedule</h1>
+  </div>
+
+  <div class="schedule-grid">
+    <!-- left panel: add/edit form -->
+    <div class="form-card">
+      <h2 id="formTitle">✍️ Add new task</h2>
+      <div class="input-group">
+        <label>📌 Task title</label>
+        <input type="text" id="taskTitle" maxlength="80">
+      </div>
+      <div class="time-row">
+        <div class="input-group">
+          <label>⏰ Start time</label>
+          <input type="time" id="startTime" value="09:00">
+        </div>
+        <div class="input-group">
+          <label>🏁 End time</label>
+          <input type="time" id="endTime" value="10:00">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>📝 Notes (optional)</label>
+        <textarea id="taskNote" rows="2" ></textarea>
+      </div>
+      <button id="addBtn">➕ Add to schedule</button>
+      <button id="cancelEditBtn" class="reset-btn" style="display: none;">✖️ Cancel editing</button>
+      <button id="resetDemoBtn" class="reset-btn">🗑️ Clear all tasks</button>
+      <div class="info-tip" style="margin-top: 12px; text-align:center;">💡 Drag tasks ↕️ to reorder your day</div>
+    </div>
+
+    <!-- right panel: timeline with tasks -->
+    <div class="timeline-card">
+      <div class="timeline-header">
+        <h2>📋 Today's timeline</h2>
+        <div class="task-stats" id="taskStats">0 tasks</div>
+      </div>
+      <div class="tasks-container" id="tasksContainer">
+        <!-- dynamic tasks injected here -->
+      </div>
+    </div>
+  </div>
+  <footer>✔️ Auto-save in browser • Mark complete • Edit anytime • Drag & drop reorder</footer>
+</div>
+
+<script>
+  // ---------- DATA MODEL ----------
+  let tasks = [];     // each task: { id, title, startTime, endTime, note, completed }
+  let editModeId = null;  // if not null, we are editing this task
+
+  // DOM elements
+  const titleInput = document.getElementById('taskTitle');
+  const startInput = document.getElementById('startTime');
+  const endInput = document.getElementById('endTime');
+  const noteInput = document.getElementById('taskNote');
+  const addBtn = document.getElementById('addBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const resetDemoBtn = document.getElementById('resetDemoBtn');
+  const tasksContainer = document.getElementById('tasksContainer');
+  const taskStatsSpan = document.getElementById('taskStats');
+  const formTitleSpan = document.getElementById('formTitle');
+
+  // Helper: save to localStorage
+  function saveToLocal() {
+    localStorage.setItem('daily_schedule_app', JSON.stringify(tasks));
+  }
+
+  // Helper: load from localStorage
+  function loadFromLocal() {
+    const stored = localStorage.getItem('daily_schedule_app');
+    if (stored) {
+      try {
+        tasks = JSON.parse(stored);
+        // ensure each task has 'completed' field for older data
+        tasks = tasks.map(t => ({ ...t, completed: t.completed === true }));
+      } catch(e) { tasks = []; }
+    } else {
+      // default demo tasks if nothing saved
+      tasks = [];
+      saveToLocal();
+    }
+  }
+
+  // render tasks to DOM + drag-and-drop setup
+  function renderTasks() {
+    if (!tasksContainer) return;
+    if (tasks.length === 0) {
+      tasksContainer.innerHTML = `<div class="empty-message">🌿 No tasks yet. Add a new activity to shape your day.</div>`;
+      taskStatsSpan.innerText = `0 tasks`;
+      return;
+    }
+    const completedCount = tasks.filter(t => t.completed).length;
+    taskStatsSpan.innerText = `${tasks.length} tasks · ${completedCount} done`;
+    
+    // create task elements with data-id attribute
+    tasksContainer.innerHTML = '';
+    tasks.forEach((task, idx) => {
+      const taskDiv = document.createElement('div');
+      taskDiv.className = `task-item ${task.completed ? 'completed-task' : ''}`;
+      taskDiv.setAttribute('data-id', task.id);
+      taskDiv.setAttribute('draggable', 'true');
+      taskDiv.setAttribute('data-index', idx);
+      
+      // inner structure
+      taskDiv.innerHTML = `
+        <input type="checkbox" class="task-complete-check" ${task.completed ? 'checked' : ''}>
+        <div class="task-content">
+          <div class="task-title">
+            <span>${escapeHtml(task.title)}</span>
+            <span class="task-time">${escapeHtml(task.startTime)} – ${escapeHtml(task.endTime)}</span>
+          </div>
+          ${task.note ? `<div class="task-note">📎 ${escapeHtml(task.note)}</div>` : ''}
+        </div>
+        <div class="task-actions">
+          <button class="edit-btn" title="Edit task">✏️</button>
+          <button class="delete-btn" title="Delete task">🗑️</button>
+        </div>
+      `;
+      
+      // checkbox toggle
+      const chk = taskDiv.querySelector('.task-complete-check');
+      chk.addEventListener('change', (e) => {
+        task.completed = e.target.checked;
+        saveToLocal();
+        renderTasks();  // re-render to update style & stats
+      });
+      
+      // edit button
+      const editBtn = taskDiv.querySelector('.edit-btn');
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startEditingTask(task.id);
+      });
+      
+      // delete button
+      const delBtn = taskDiv.querySelector('.delete-btn');
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteTaskById(task.id);
+      });
+      
+      // drag and drop events
+      taskDiv.addEventListener('dragstart', handleDragStart);
+      taskDiv.addEventListener('dragover', handleDragOver);
+      taskDiv.addEventListener('drop', handleDrop);
+      taskDiv.addEventListener('dragend', handleDragEnd);
+      
+      tasksContainer.appendChild(taskDiv);
+    });
+  }
+  
+  // Simple escape to avoid XSS
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+      return c;
+    });
+  }
+  
+  // drag & drop globals
+  let dragSourceId = null;
+  
+  function handleDragStart(e) {
+    const target = e.target.closest('.task-item');
+    if (!target) return;
+    dragSourceId = target.getAttribute('data-id');
+    e.dataTransfer.setData('text/plain', dragSourceId);
+    e.dataTransfer.effectAllowed = 'move';
+    target.classList.add('dragging');
+  }
+  
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+  
+  function handleDrop(e) {
+    e.preventDefault();
+    const targetTask = e.target.closest('.task-item');
+    if (!targetTask) return;
+    const targetId = targetTask.getAttribute('data-id');
+    if (!dragSourceId || !targetId || dragSourceId === targetId) return;
+    
+    const sourceIndex = tasks.findIndex(t => t.id == dragSourceId);
+    const targetIndex = tasks.findIndex(t => t.id == targetId);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+    
+    // reorder array
+    const [movedTask] = tasks.splice(sourceIndex, 1);
+    tasks.splice(targetIndex, 0, movedTask);
+    saveToLocal();
+    renderTasks();
+  }
+  
+  function handleDragEnd(e) {
+    const draggingElem = document.querySelector('.task-item.dragging');
+    if (draggingElem) draggingElem.classList.remove('dragging');
+    dragSourceId = null;
+  }
+  
+  // CRUD operations
+  function addOrUpdateTask() {
+    const title = titleInput.value.trim();
+    if (!title) {
+      alert("Please add a task title");
+      return;
+    }
+    const startTime = startInput.value;
+    const endTime = endInput.value;
+    if (!startTime || !endTime) {
+      alert("Please select both start and end time");
+      return;
+    }
+    const note = noteInput.value.trim();
+    
+    if (editModeId !== null) {
+      // update existing task
+      const index = tasks.findIndex(t => t.id === editModeId);
+      if (index !== -1) {
+        tasks[index] = {
+          ...tasks[index],
+          title: title,
+          startTime: startTime,
+          endTime: endTime,
+          note: note,
+          completed: tasks[index].completed // keep previous completion status
+        };
+      }
+      editModeId = null;
+      formTitleSpan.innerText = "✍️ Add new task";
+      addBtn.innerText = "➕ Add to schedule";
+      cancelEditBtn.style.display = 'none';
+    } else {
+      // create new
+      const newTask = {
+        id: Date.now(),
+        title: title,
+        startTime: startTime,
+        endTime: endTime,
+        note: note,
+        completed: false,
+      };
+      tasks.push(newTask);
+    }
+    // reset form fields
+    titleInput.value = '';
+    noteInput.value = '';
+    startInput.value = '09:00';
+    endInput.value = '10:00';
+    saveToLocal();
+    renderTasks();
+  }
+  
+  function startEditingTask(taskId) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    editModeId = task.id;
+    titleInput.value = task.title;
+    startInput.value = task.startTime;
+    endInput.value = task.endTime;
+    noteInput.value = task.note || '';
+    formTitleSpan.innerText = "✏️ Edit task";
+    addBtn.innerText = "💾 Save changes";
+    cancelEditBtn.style.display = 'block';
+    // scroll smoothly to form
+    document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  
+  function cancelEditing() {
+    editModeId = null;
+    titleInput.value = '';
+    noteInput.value = '';
+    startInput.value = '09:00';
+    endInput.value = '10:00';
+    formTitleSpan.innerText = "✍️ Add new task";
+    addBtn.innerText = "➕ Add to schedule";
+    cancelEditBtn.style.display = 'none';
+  }
+  
+  function deleteTaskById(taskId) {
+    if (confirm("Delete this task from your schedule?")) {
+      tasks = tasks.filter(t => t.id !== taskId);
+      if (editModeId === taskId) cancelEditing();
+      saveToLocal();
+      renderTasks();
+    }
+  }
+  
+  function resetAllTasks() {
+    if (confirm("⚠️ Clear ALL tasks? This cannot be undone.")) {
+      tasks = [];
+      saveToLocal();
+      if (editModeId !== null) cancelEditing();
+      renderTasks();
+    }
+  }
+  
+  // set today's date in header
+  function updateDateBadge() {
+    const now = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const formatted = now.toLocaleDateString(undefined, options);
+    document.getElementById('currentDate').innerText = formatted;
+  }
+  
+  // event binding and init
+  function init() {
+    loadFromLocal();
+    updateDateBadge();
+    renderTasks();
+    
+    addBtn.addEventListener('click', addOrUpdateTask);
+    cancelEditBtn.addEventListener('click', cancelEditing);
+    resetDemoBtn.addEventListener('click', resetAllTasks);
+    
+    // optional: allow pressing enter in title? not needed but fine
+    titleInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addOrUpdateTask();
+    });
+  }
+  
+  init();
+</script>
+</body>
+</html>
